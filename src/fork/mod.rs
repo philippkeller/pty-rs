@@ -32,7 +32,7 @@ impl Fork {
                         0 => {
                             match master.ptsname() {
                                 Err(cause) => Err(ForkError::BadMaster(cause)),
-                                Ok(name) => Fork::from_pts(name), 
+                                Ok(name) => Fork::from_pts(name),
                             }
                         }
                         pid => Ok(Fork::Parent(pid, master)),
@@ -75,16 +75,17 @@ impl Fork {
     }
 
     /// Waits until it's terminated.
-    pub fn wait(&self) -> Result<libc::pid_t> {
+    pub fn wait(&self) -> Result<(libc::pid_t, libc::c_int)> {
         match *self {
             Fork::Child(_) => Err(ForkError::IsChild),
             Fork::Parent(pid, _) => {
                 loop {
                     unsafe {
-                        match libc::waitpid(pid, &mut 0, 0) {
+                        let mut status = 0;
+                        match libc::waitpid(pid, &mut status, 0) {
                             0 => continue,
                             -1 => return Err(ForkError::WaitpidFail),
-                            _ => return Ok(pid),
+                            _ => return Ok((pid, status)),
                         }
                     }
                 }

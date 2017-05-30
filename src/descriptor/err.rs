@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 /// The alias `Result` learns `DescriptorError` possibility.
-
+#[allow(dead_code)]
 pub type Result<T> = ::std::result::Result<T, DescriptorError>;
 
 /// The enum `DescriptorError` defines the possible errors
