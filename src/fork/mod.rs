@@ -43,25 +43,23 @@ impl Fork {
     }
 
     /// The constructor function `from_pts` is a private
-    /// extention from the constructor function `new` who
+    /// extension from the constructor function `new` who
     /// prepares and returns the child.
     fn from_pts(ptsname: *const ::libc::c_char) -> Result<Self> {
         unsafe {
+            // make parent process the session leader
+            // so e.g. Ctrl-C is sent to the slave
             if libc::setsid() == -1 {
                 Err(ForkError::SetsidFail)
             } else {
                 match Slave::new(ptsname) {
                     Err(cause) => Err(ForkError::BadSlave(cause)),
                     Ok(slave) => {
-                        if let Some(cause) = slave.dup2(libc::STDIN_FILENO)
-                            .err()
-                            .or(slave.dup2(libc::STDOUT_FILENO)
-                                .err()
-                                .or(slave.dup2(libc::STDERR_FILENO).err())) {
-                            Err(ForkError::BadSlave(cause))
-                        } else {
-                            Ok(Fork::Child(slave))
-                        }
+                        slave.dup2(libc::STDIN_FILENO)
+                            .and_then(|_| slave.dup2(libc::STDOUT_FILENO))
+                            .and_then(|_| slave.dup2(libc::STDERR_FILENO))
+                            .and_then(|_| Ok(Fork::Child(slave)))
+                            .or_else(|e| Err(ForkError::BadSlave(e)))
                     }
                 }
             }
