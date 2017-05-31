@@ -44,7 +44,6 @@
 //!
 //! ```rust
 //! extern crate pty;
-//! extern crate libc;
 //!
 //! use std::ffi::CString;
 //! use std::io::Read;
