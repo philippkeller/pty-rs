@@ -74,18 +74,19 @@ impl Fork {
         Fork::new(::DEFAULT_PTMX)
     }
 
-    /// Waits until it's terminated.
-    pub fn wait(&self) -> Result<(libc::pid_t, libc::c_int)> {
+    /// Waits until slave is terminated (blocking call)
+    /// Returns exit status of slave process
+    pub fn wait(&self) -> Result<(libc::c_int)> {
         match *self {
             Fork::Child(_) => Err(ForkError::IsChild),
             Fork::Parent(pid, _) => {
+                let mut status = 0;
                 loop {
                     unsafe {
-                        let mut status = 0;
                         match libc::waitpid(pid, &mut status, 0) {
                             0 => continue,
                             -1 => return Err(ForkError::WaitpidFail),
-                            _ => return Ok((pid, status)),
+                            _ => return Ok(status),
                         }
                     }
                 }
